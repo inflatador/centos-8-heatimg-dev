@@ -1,0 +1,39 @@
+#cloud-config
+
+write_files:
+
+- path: /etc/systemd/system/install-and-run-magento-playbook.service
+  content: |
+            [Unit]
+            After=network.target
+            ConditionPathExists=!/var/www/vhosts/magento
+
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/bash /root/install-and-run-magento-playbook.sh
+
+            [Install]
+            WantedBy=multi-user.target
+  permissions:
+     '0644'
+
+- path: /root/install-and-run-magento-playbook.sh
+  content: |
+          #!/bin/bash
+          export ANSIBLE_LOCAL_TEMP=$HOME/.ansible/tmp
+          export ANSIBLE_REMOTE_TEMP=$HOME/.ansible/tmp
+          apt-get install -y git ansible
+          git clone https://github.com/inflatador/magento2-ansible.git /root/magento2-ansible
+          ansible-playbook -v -i /root/magento2-ansible/hosts /root/magento2-ansible/site.yml
+          unlink  /etc/systemd/system/multi-user.target.wants/install-and-run-magento-playbook.service
+          rm -f /etc/systemd/system/install-and-run-magento-playbook.service
+          systemctl daemon-reload
+          rm -rf /root/.composer
+          rm -rf /root/magento2-ansible
+          rm -f /root/install-and-run-magento-playbook.sh
+
+  permissions:
+    '0700'
+
+runcmd:
+  - [ sh, -xc, "ln -fs /etc/systemd/system/install-and-run-magento-playbook.service /etc/systemd/system/multi-user.target.wants/install-and-run-magento-playbook.service" ]

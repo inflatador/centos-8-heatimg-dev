@@ -1,0 +1,39 @@
+#cloud-config
+
+users:
+  - name: rack
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: $YOURPWHASH
+    ssh-authorized-keys:
+    - $YOURKEY
+    
+write_files:
+
+- path: /etc/sudoers.d/10-rack
+  content: |
+    rack ALL=(ALL) NOPASSWD:ALL
+  permissions:
+   '0600'
+   
+- path: /home/rack/.gitconfig
+  content: |
+        [user]
+        name = $YOURUSER
+        email = $YOURUSER@users.noreply.github.com
+        [core]
+        excludesfile = /home/rack/.gitignore
+  permissions:
+      '0600'
+
+
+
+packages:
+  - ansible
+  - git
+
+runcmd:
+  - [ sh, -xc, "git clone https://github.com/$YOURUSER/spinup_apps.git /home/rack/spinup_apps" ]
+  - [ sh, -xc, "git -C /home/rack/spinup_apps remote remove origin" ]
+  - [ sh, -xc, "git -C /home/rack/spinup_apps remote add origin git@github.com:$YOURUSER/spinup_apps.git" ]
+  - [ sh, -xc, "chown -R rack:rack /home/rack" ]
